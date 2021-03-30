@@ -1,0 +1,178 @@
+---
+title: "Markdown_Airbnb"
+author: "Roberto García"
+date: "16/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+#library(knitr)
+#knit('Rmarkdown_Airbnb.Rmd')
+```
+
+## R Markdown
+
+This is the html version of the R Markdown document. Here it will be cover the approaches taken in orden to get insights of the Airbnb datasets. It will also be explained the operability of the Shiny app.
+
+First, we have the datasets, which are inside a file called "AirBnB.Rdata". This file is composed of 2 dataframes: L and R. Some insights of this dataframes will be displayed. The following is the dimension and some data within the R dataframe:
+``` {r echo=FALSE}
+load("C:/Users/RobeR/Desktop/MIS COSAS/DSTI MASTER/TU-1/R FOR BIG DATA/AirBnB.Rdata")
+dim(R)
+head(R)
+```
+Whereas the following is the dimension and column names of the L dataframe:
+``` {r echo=FALSE}
+dim(L)
+names(L)
+```
+As we can see the columns of the L dataframe are inmense. We will get some meaningful insights that match the shiny app targets. 
+
+In order to extract the available prices for some rental features, we need to know which elements compose each of those features. If we take the columns *property_type*, *room_type*, *accommodates*, *bathrooms* and *bedrooms* as the main elements for determining the request, we can get the following insights:  
+  
+**Types of property:**
+``` {r echo=FALSE}
+propertyType=unique(L$property_type)
+propertyType=toString(propertyType)
+propertyType=as.list(strsplit(propertyType, ",")[[1]])
+
+roomType=unique(L$room_type)
+roomType=toString(roomType)
+roomType=as.list(strsplit(roomType, ",")[[1]])
+
+accommodatesType=unique(L$accommodates)
+accommodatesType=toString(accommodatesType)
+accommodatesType=as.list(strsplit(accommodatesType, ",")[[1]])
+accommodatesType=as.numeric(accommodatesType)
+accommodatesType=as.list(accommodatesType)
+
+bathroomsType=unique(L$bathrooms)
+bathroomsType=toString(bathroomsType)
+bathroomsType=as.list(strsplit(bathroomsType, ",")[[1]])
+bathroomsType=as.numeric(bathroomsType)
+bathroomsType=as.list(bathroomsType)
+
+bedroomsType=unique(L$bedrooms)
+bedroomsType=toString(bedroomsType)
+bedroomsType=as.list(strsplit(bedroomsType, ",")[[1]])
+bedroomsType=as.numeric(bedroomsType)
+bedroomsType=as.list(bedroomsType)
+
+for (i in propertyType){if (i!=" "){print(i)}}
+```
+  **Types of room:**
+```{r echo=FALSE}
+for (i in roomType){print(i)}
+``` 
+  **Number of Accommodate:**
+```{r echo=FALSE}
+for (i in accommodatesType){print(i)}
+``` 
+  **Number of Bathrooms:**
+```{r echo=FALSE}
+for (i in bathroomsType){if(is.na(i)){}else{print(i)}}
+``` 
+  **Number of Bedrooms:**
+```{r echo=FALSE}
+for (i in bedroomsType){if(is.na(i)){}else{print(i)}}
+``` 
+  
+  After watching the diferential elements within the most relevant features, we can get the range and mean prices of the availables sites within some specific values for those features. For example, if we would make a query with the following values:  
+  Type of property: "Apartment"  
+  Type of room: "Private room"  
+  Number of Accommodate: 2  
+  Number of Bathrooms: 1  
+  Number of Bedrooms: 1    
+  We would obtain the following prices:
+```{r echo=FALSE}
+
+propertytype1="Apartment"
+roomtype1="Private room"
+accommodatestype1=2
+bathroomstype1=1
+bedroomstype1=1
+
+
+selecto<-L[L$property_type==propertytype1,]
+selecto<-selecto[selecto$room_type==roomtype1,]
+selecto<-selecto[selecto$accommodates==accommodatestype1,]
+selecto<-selecto[selecto$bathrooms==bathroomstype1,]
+selecto<-selecto[selecto$bedrooms==bedroomstype1,]
+
+prices1<- as.numeric(gsub('[$,]', '', selecto$price))
+price_sum=0
+prices1<-prices1[!is.na(prices1)]
+
+price_mean=sum(prices1)/length(prices1)
+price_max=max(unlist(prices1))
+price_min=min(unlist(prices1)) 
+
+cat("Mean price:")
+price_mean
+cat("Minimum price:")
+price_min
+cat("Maximum price:")
+price_max
+``` 
+
+After having deployed this solution, we can delve into the number of apartments that a certain host has. In order to know the number we would just need to be aware of the host ID, and search for the number of times this ID repeats in the L database (by setting a loop that racks the all database and a counter, for example). With this in mind, we can easily obtain the registrations each hoster has made in the Airbnb platform by just introducing its ID. Let's see an example:
+
+```{r echo=FALSE}
+cat("Host ID: 35777602")
+hostid=35777602
+numberofrows=length(L$id)
+equal1=(L$host_id==hostid) 
+        lista1<-list()
+        
+        for (i in 1:numberofrows){
+            if (equal1[i]==TRUE){lista1<-c(lista1,1)}
+        }
+        
+        Hoster_NumberOf_Apartments<-length(lista1)
+cat("Number of registered rentals:")
+Hoster_NumberOf_Apartments
+```
+  
+In this case, for the Host ID: 35777602 there would be just 1 registered rental.
+
+For the last part of this proyect, we will take a look at the availability of the different neighbourhoods according to time. In the dataset we count on different metrics in order to get some insights about this. We will use the different availability days within the following 30,60,90 and 365 days in order to get a sense of the reservations made on each neighbourhood according to time.  
+For example, if we choose the neighbourhood "Batignolles-Monceau", the app will track every disposable rental site and will check its availability for the following 30,60,90 and 365 days.The app will return the mean availability for each of those periods. Let's take a look at it:
+
+```{r echo=FALSE}
+cat("Neighbourhood: Batignolles-Monceau")
+enter_neighbourhood="Batignolles-Monceau"
+equal=(L$neighbourhood_cleansed==enter_neighbourhood)
+count<-0
+sum_30<-0
+sum_60<-0
+sum_90<-0
+sum_365<-0
+for (j in 1:numberofrows){
+  if(equal[j]==TRUE){
+    count<-count+1
+    sum_30<-sum_30+L$availability_30[j]
+    sum_60<-sum_60+L$availability_60[j]
+    sum_90<-sum_90+L$availability_90[j]
+    sum_365<-sum_365+L$availability_365[j]
+  }
+}
+meanAv_30<-sum_30/count
+meanAv_60<-sum_60/count
+meanAv_90<-sum_90/count
+meanAv_365<-sum_365/count
+cat("Average days availability for the following 30 days:")
+meanAv_30
+cat("Average days availability for the following 60 days:")
+meanAv_60
+cat("Average days availability for the following 90 days:")
+meanAv_90
+cat("Average days availability for the following 365 days:")
+meanAv_365
+```
+For the given neighbourhood, Batignolles-Monceau, we can see that it is usually reserved half of the days for all the periods, so the rentals in this neighbourhood are somewhat equally distributed along the all year.  
+With these results we can get a sense of the rental disposals of the different neighbourhoods according to time.
+
+
+
+
+
